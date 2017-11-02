@@ -4,7 +4,7 @@ This is my JavaScript Development Environment, below is a list of everything tha
 
 # Editors and Configuration
 
-Editor - VS Code  
+Editor: VS Code  
 
 Pluggins:  
 * CSS Peek (1.3.1)  
