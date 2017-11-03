@@ -148,4 +148,31 @@ npm start -s
 ```
 # Transpiling
 
+Transpiler: Babel
 
+Create a new file in the main directory of your app, called '.babelrc', in this file include the following code;  
+(note: this will tell your app to use the latest version of JavaScript)
+```
+{
+  "presets": [
+    "latest"
+  ]
+}
+
+```
+With Babel running we can now change our package.json to transpile using Babel, so our scripts should now look as follows;
+```
+  "scripts": {
+    "prestart": "babel-node buildScripts/startMessage.js",
+    "start": "npm-run-all --parallel security-check open:src",
+    "open:src": "babel-node buildScripts/srcServer.js",
+    "security-check": "nsp check",
+    "localtunnel": "lt --port 3000",
+    "share": "npm-run-all --parallel open:src localtunnel"
+  },
+```
+To test that this is working, we can change the scripts to use a newer version of JavaScript, by using the 'const' keyword etc.
+
+# Bundler
+
+Bundler: 
