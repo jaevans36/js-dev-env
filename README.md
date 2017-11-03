@@ -4,7 +4,7 @@ This is my JavaScript Development Environment, below is a list of everything tha
 
 # Editors and Configuration
 
-Editor: VS Code  
+Editor: VS Code (https://code.visualstudio.com/)  
 
 Pluggins:  
 * CSS Peek (1.3.1)  
@@ -34,4 +34,11 @@ insert_final_newline = true
 
 [*.md]
 trim_trailing_whitespace = false
+```  
+Package Manager: npm (https://www.npmjs.com/)  
+Package Security: Node Secuirty Platform (https://nodesecurity.io/)
+
+```
+npm install -g nsp
+nsp check
 ```
