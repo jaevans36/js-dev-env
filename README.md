@@ -4,7 +4,7 @@ This is my JavaScript Development Environment, below is a list of everything tha
 
 # Editors and Configuration
 
-Editor: VS Code (https://code.visualstudio.com/)  
+### Editor: VS Code (https://code.visualstudio.com/)  
 
 Pluggins:  
 * CSS Peek (1.3.1)  
@@ -20,7 +20,7 @@ Pluggins:
 * Path Intellisense (1.4.2)  
 * Open in browser (1.1.0)    
   
-Configuration: EditorConfig (http://editorconfig.org/)
+### Configuration: EditorConfig (http://editorconfig.org/)
 ```
 root = true
 
@@ -37,16 +37,18 @@ trim_trailing_whitespace = false
 ```  
 # Package managers and Security
 
-Package Manager: npm (https://www.npmjs.com/)  
-Package Security: Node Secuirty Platform (https://nodesecurity.io/)
-
+### Package Manager: npm (https://www.npmjs.com/)  
 ```
 npm install -g nsp
+```
+
+### Package Security: Node Secuirty Platform (https://nodesecurity.io/)
+```
 nsp check
 ```
 # Development Web Server
 
-Development Web Server: Express (https://expressjs.com/)  
+### Development Web Server: Express (https://expressjs.com/)  
 
 1. Create a new folder called 'buildScripts'
 2. In the folder create a js file called 'srcServer.js'
@@ -84,7 +86,7 @@ Note: The above line is used to run it directly, however this will be made easie
 
 # Sharing solution
 
-Sharing: localtunnel (https://localtunnel.github.io/www/)
+### Sharing: localtunnel (https://localtunnel.github.io/www/)
 ```
 npm install localtunnel -g
 lt --port 3000
@@ -99,7 +101,7 @@ Note: Browsersync can be used along side this option, and will share the functio
 
 # Automation
 
-Automation: npm scripts (https://css-tricks.com/why-npm-scripts/)
+### Automation: npm scripts (https://css-tricks.com/why-npm-scripts/)
 
 As a start, to make running the Express server easier, use the following script in package.json
 ```
@@ -148,7 +150,7 @@ npm start -s
 ```
 # Transpiling
 
-Transpiler: Babel
+### Transpiler: Babel
 
 Create a new file in the main directory of your app, called '.babelrc', in this file include the following code;  
 (note: this will tell your app to use the latest version of JavaScript)
@@ -175,4 +177,72 @@ To test that this is working, we can change the scripts to use a newer version o
 
 # Bundler
 
-Bundler: 
+### Bundler: Webpack
+
+Create a new file at the route of your folder called 'webpack.config.dev.js'. Then add the following code into the file;
+```
+import path from 'path';
+
+export default {
+  debug: true,
+  devtool: 'inline-source-map',
+  noInfo: false,
+  entry: [
+    path.resolve(__dirname, 'src/index')
+  ],
+  target: 'web',
+  output: {
+    path: path.resolve(__dirname, 'src'),
+    publicPath: '/',
+    filename: 'bundle.js'
+  },
+  plugin: [],
+  module: {
+    loaders: [
+      {test: /\.js$/, exclude: /node_modules/, loaders: ['babel']},
+      {test: /\.css$/, loaders: ['style', 'css']}
+    ]
+  }
+}
+```
+Next, update express to use webpack, update srcServer.js so that it should now look like this;
+```
+import express from 'express';
+import path from 'path';
+import open from 'open';
+import webpack from 'webpack';
+import config from '../webpack.config.dev';
+
+const port = 3000;
+const app = express();
+const compiler = webpack(config);
+
+app.use(require('webpack-dev-middleware')(compiler, {
+  noInfo: true,
+  publicPath: config.output.publicPath
+}));
+
+app.get('/', function (req, res){
+  res.sendFile(path.join(__dirname, '../src/index.html'));
+});
+
+app.listen(port, function(err) {
+  if (err) {
+    console.log(err);
+  } else {
+    open('http://localhost:' + port);
+  }
+});
+
+```
+Now that webpack is set up to bundle all our js and css, it's as simple as creating and using the javascript in our project src folder. Another neat thing we can do is to include our css files in our js, and have it injected into the page, using the following line, in our js file;
+```
+import './index.css';
+```
+With this set up, it may make it more difficult to debug, however the solution for this is to use sourcemaps. As we've already told our webpack to use 'inline-source-map' we're part way there to setting this up already.  
+(note: there are different settings to sourcemaps we can use, which can be found here - http://webpack.github.io/docs/configuration.html#devtool also note that higher quality sourcemaps will take longer to load)
+
+Using the following code in our js file, will allow us to access the specific file where it's placed, which allows us to debug our code without seeing the full transpiled code.
+```
+debugger;
+```
