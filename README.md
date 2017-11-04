@@ -250,8 +250,51 @@ debugger;
 
 ### Linter: ESLint
 
-Steps to for configuring ESLint:-
-1. Config file, add a new section to the package.json, as follows;
+First create a new file in the main app directory called '.eslintrc.json' and add the following code.
 ```
-
+{
+  "root": true,
+  "extends": [
+    "eslint:recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 7,
+    "sourceType": "module"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "mocha": true
+  },
+  "rules": {
+    "no-console": 1
+  }
+}
 ```
+Next add the following to our package.json scripts
+```
+"lint": "esw webpack.config.* src buildScripts --color"
+```
+As this will now error for any console.log, we can add the following line into any js file we want to ignore eslint.
+```
+/* eslint-disable no-console */
+```
+Or if we want it to be disabled on a single line, use this example;
+```
+console.log(chalk.green('Starting the app in dev mode...')); // eslint-disable-line no-console
+```
+Use the following command to run the linting process;
+```
+npm run lint
+```
+What's done above won't watch our app automatically, to do that add the following code to package.json;
+```
+"lint:watch": "npm run lint -- --watch"
+```
+Then to get it watching the file, use the following in the terminal;
+```
+npm run lint:watch
+```
+Final thing to do is to add lint:watch to our package.json start script.
