@@ -246,3 +246,12 @@ Using the following code in our js file, will allow us to access the specific fi
 ```
 debugger;
 ```
+# Linting
+
+### Linter: ESLint
+
+Steps to for configuring ESLint:-
+1. Config file, add a new section to the package.json, as follows;
+```
+
+```
