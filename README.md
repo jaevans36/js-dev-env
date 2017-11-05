@@ -298,3 +298,7 @@ Then to get it watching the file, use the following in the terminal;
 npm run lint:watch
 ```
 Final thing to do is to add lint:watch to our package.json start script.
+
+# Testing and Continuous Integration
+
+
