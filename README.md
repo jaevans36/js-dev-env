@@ -301,4 +301,76 @@ Final thing to do is to add lint:watch to our package.json start script.
 
 # Testing and Continuous Integration
 
+1. Testing Framework: Mocha
+2. Assertion Library: Chai
+3. Helper Libraries: JSDOM
+4. Where to run tests: Node
+5. Where to place tests: Alongside
+6. When to run tests: Upon save
+
+### Setup
+
+Create a new file in our build scripts called testSetup.js, and include the following code;
+```
+// This file isn't transpiled, so must use CommonJS and ES5
+
+// Register babel to transpile before our tests run.
+require('babel-register')();
+
+// Disable webpack features that Mocha doesn't understand.
+require.extensions['.css'] = function() {};
+```
+In our package.json include the following lines in scripts;
+```
+"test": "mocha --reporter progress buildScripts/testSetup.js \"src/**/*.test.js\"",
+"test:watch": "npm run test -- --watch"
+```
+Then update our start script so that it now should look like this;
+```
+"start": "npm-run-all --parallel security-check open:src lint:watch test:watch",
+```
+To test this out with some example tests, create a new test file called index.test.js (For testing our index files), then add the following;
+```
+import {expect} from 'chai';
+import jsdom from 'jsdom';
+import fs from 'fs';
+
+// Example tests - testing that it's working
+describe('Our first test', () => {
+  it('should pass', () => {
+    expect(true).to.equal(true);
+  });
+});
+
+// Example tests - testing DOM elements
+describe('index.html', () => {
+  it('should say hello', (done) => {
+    const index = fs.readFileSync('./src/index.html', "utf-8");
+    jsdom.env(index, function(err, window) {
+      const h1 = window.document.getElementsByTagName('h1')[0];
+      expect(h1.innerHTML).to.equal("Hello World!");
+      done();
+      window.close();
+    });
+  })
+})
+```
+The first test is a simple script to test that it's working, the second is to test for a h1 element with the content for 'Hello World!'.
+
+### Continuous integration
+
+Testing to see if any committed changes have broken the build on the CI Server. The CI servers I'll be using are;
+1. Travis (Linux, Mac) - https://travis-ci.org/
+2. Appveyor (Windows) - https://www.appveyor.com/
+
+#### Travis setup
+
+1. Log in to https://travis-ci.org (If not signed up, sign in with github - which will sync your account with Travis)
+2. In your account, enable the repository you want to use with travis (you can change settings using the gear to the right if needed)
+3. Create a new file in our main project directory called .travis.yml and add the following code;
+```
+language: node_js
+node_js:
+  - "6"
+```
 
