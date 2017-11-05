@@ -373,4 +373,35 @@ language: node_js
 node_js:
   - "6"
 ```
+Now, whenever you commit changes for this repository to github, it will test our build for errors in our tests.
 
+#### Appveyor setup
+
+1. Sign up to https://www.appveyor.com/ (again it will allow you to sign up with your github account - using the appropriate plan)
+2. Once approved and in your account, add a new project then select the project in github
+3. Create a new file in the project route folder called appveyor.yml and add the following code;
+```
+# Test against this version of Node.js
+environment:
+  matrix:
+    # node.js
+    - nodejs_version: "6"
+
+# Install scripts. (runs after repo cloning)
+  install:
+    # Get the latest stable version of Node.js or io.js
+    - ps: Install-Product node $env:nodejs_version
+    # install modules
+    - npm install
+
+# Post-install test scripts.
+test_script:
+  # Output useful info for debugging.
+  - node --version
+  - npm --version
+  # run tests
+  - npm test
+
+# Don't actually build.
+build: off
+```
