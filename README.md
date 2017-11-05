@@ -405,3 +405,39 @@ test_script:
 # Don't actually build.
 build: off
 ```
+
+# Centralising HTTP Requests
+
+Add the following code to our srcServer.js for our current Express set up
+```
+app.get('/users', function(req, res) {
+  // Hard coding for simplicity. Pretend this hits a real database, this would normally be the response from a database or server
+  res.json([
+    {"id": 1,"firstName":"Jay","lastName":"Evans","email":"jaymail@gmail.com"},
+    {"id": 2,"firstName":"Jade","lastName":"Evans","email":"jademail@gmail.com"},
+    {"id": 3,"firstName":"David","lastName":"Evans","email":"davidmail@gmail.com"}
+  ]);
+});
+```
+Starting our app and using /users at the end of our URL, should return all the users being called from our instance above.
+
+Next create a new folder in our src folder called 'api', this will centralise all our api calls. Within this folder create a new file called 'userApi.js', and include the following code;
+```
+import 'whatwg-fetch';
+
+export function getUsers() {
+  return get('users');
+}
+
+function get(url) {
+  return fetch(url).then(onSuccess, onError);
+}
+
+function onSuccess(response) {
+  return response.json();
+}
+
+function onError(error) {
+  console.log(error); // eslint-disable-line no-console
+}
+```
