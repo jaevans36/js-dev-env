@@ -441,3 +441,206 @@ function onError(error) {
   console.log(error); // eslint-disable-line no-console
 }
 ```
+To test this, we can mock up some javascript to post user information on the page, see the following files for a working example of this;
+* userApi.js
+* index.html
+* index.js
+* index.test.js
+
+### Mocking HTTP
+
+We'll be using the following to help set up our mock http data;
+1. Schema - JSON Schema Faker
+    * http://json-schema.org/
+    * https://github.com/json-schema-faker/json-schema-faker
+    * https://github.com/typicode/json-server
+2. Random data generators:
+    * faker.js 
+      * https://github.com/marak/Faker.js/wiki
+      * http://marak.github.io/faker.js/index.html 
+      * https://rawgit.com/Marak/faker.js/master/examples/browser/index.html)
+    * chance.js
+      * http://chancejs.com/
+    * randexp.js
+      * http://fent.github.io/randexp.js/
+3. Server Data via API - JSON Server
+
+#### Setup
+
+1. Creat a new file called mockDataSchema.js in our buildScripts folder, and add the following code to is;
+```
+export const schema = {
+  "type": "object",
+  "properties": {
+    "users": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "unique": true,
+            "minimum": 1
+          },
+          "firstName": {
+            "type": "string",
+            "faker": "name.firstName"
+          },
+          "lastName": {
+            "type": "string",
+            "faker": "name.lastName"
+          },
+          "email": {
+            "type": "string",
+            "faker": "internet.email"
+          }
+        },
+        required: ['id', 'firstName', 'lastName', 'email']
+      }
+    }
+  },
+  required: ['users']
+};
+```
+2. Create another file in buildScripts called 'generateMockData.js', and include the following code;
+```
+/* eslint-disable no-console */
+
+import jsf from 'json-schema-faker';
+import {schema} from './mockDataSchema';
+import fs from 'fs';
+import chalk from 'chalk';
+
+const json = JSON.stringify(jsf(schema));
+
+fs.writeFile("./src/api/db.json", json, function (err) {
+  if (err) {
+    return console.log(chalk.red(err));
+  } else {
+    console.log(chalk.green("Mock data generated."));
+  }
+});
+```
+3. Add a new line to the package.json, to make it easy to run our generated  
+(note: we used babel-node again as the generated is written with ES6)
+```
+"generate-mock-data": "babel-node buildScripts/generateMockData"
+```
+If you now run the following command in the terminal, you will see that the data is generated in our api folder as a new file called db.json
+```
+npm run generate-mock-data
+```
+4. Next add a new line to our script files, this will set up a json-server to make the generated db accessible
+```
+"start-mockapi": "json-server --watch src/api/db.json --port 3001"
+```
+Now if we run the following command, we will see that it will give you a URL in the terminal from which you can access the json data
+```
+npm run start-mockapi
+```
+To ensure that the data is random each time we run it, place the following line before our 'start-mockapi', in scripts and add 'start-mockapi' to our start script;
+```
+"prestart-mockapi": "npm run generate-mock-data",
+```
+So that our scripts should now look like this;
+```
+  "scripts": {
+    "prestart": "babel-node buildScripts/startMessage.js",
+    "start": "npm-run-all --parallel security-check open:src lint:watch test:watch start-mockapi",
+    "open:src": "babel-node buildScripts/srcServer.js",
+    "lint": "esw webpack.config.* src buildScripts --color",
+    "lint:watch": "npm run lint -- --watch",
+    "security-check": "nsp check",
+    "localtunnel": "lt --port 3000",
+    "share": "npm-run-all --parallel open:src localtunnel",
+    "test": "mocha --reporter progress buildScripts/testSetup.js \"src/**/*.test.js\"",
+    "test:watch": "npm run test -- --watch",
+    "generate-mock-data": "babel-node buildScripts/generateMockData",
+    "prestart-mockapi": "npm run generate-mock-data",
+    "start-mockapi": "json-server --watch src/api/db.json --port 3001"
+  },
+```
+5. Next we need to change our application so that it can use this data. Create a new file in our src/api folder called 'baseUrl.js', and include the following code;
+```
+export default function getBaseUrl() {
+  const inDevelopment = window.location.hostname === 'localhost';
+  return inDevelopment ? 'http://localhost:3001/' : '/';
+}
+```
+Then update our userApi.js so that it should now look like this;
+```
+import 'whatwg-fetch';
+import getBaseUrl from './baseUrl';
+
+const baseUrl = getBaseUrl();
+
+// export allows this to be a public function
+export function getUsers() {
+  return get('users');
+}
+
+function get(url) {
+  return fetch(baseUrl + url).then(onSuccess, onError);
+}
+
+function onSuccess(response) {
+  return response.json();
+}
+
+function onError(error) {
+  console.log(error); // eslint-disable-line no-console
+}
+```
+6. Next we will update our UI so that we can manipulate the data in our API, firstly we'll need to open u p the userApi.js and add in the following function;
+```
+export function deleteUser(id) {
+  return del(`users/${id}`);
+}
+
+// Can't call func delete since reserved word.
+function del(url) {
+  const request = new Request(baseUrl + url, {
+    method: 'DELETE'
+  });
+
+  return fetch(request).then(onSuccess, onError);
+}
+```
+Then update our index.js so that it looks like this;
+```
+import './index.css';
+import {getUsers, deleteUser} from './api/userApi';
+
+// Populate table of users via API call.
+getUsers().then(result => {
+  let usersBody = "";
+
+  result.forEach(user => {
+    usersBody+= `<tr>
+      <td><a href="#" data-id="${user.id}" class="deleteUser">Delete</a></td>
+      <td>${user.id}</td>
+      <td>${user.firstName}</td>
+      <td>${user.lastName}</td>
+      <td>${user.email}</td>
+      </tr>`
+  });
+
+  global.document.getElementById('users').innerHTML = usersBody;
+
+  const deleteLinks = global.document.getElementsByClassName('deleteUser');
+
+  // Must use array.from to create a real array from a DOM collection
+  // getElementsByClassName only returns an "array like" object
+  Array.from(deleteLinks, link => {
+    link.onclick = function(event) {
+      const element = event.target;
+      event.preventDefault();
+      deleteUser(element.attributes["data-id"].value);
+      const row = element.parentNode.parentNode;
+      row.parentNode.removeChild(row);
+    };
+  });
+});
+```
