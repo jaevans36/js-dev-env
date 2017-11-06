@@ -646,4 +646,113 @@ getUsers().then(result => {
 ```
 # Making our environment production ready
 
+Duplicate webpack.config.dev.js and rename it to 'webpack.config.prod.js' and fill with the following code;
+```
+import path from 'path';
+import webpack from 'webpack';
 
+export default {
+  debug: true,
+  devtool: 'source-map',
+  noInfo: false,
+  entry: [
+    path.resolve(__dirname, 'src/index')
+  ],
+  target: 'web',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
+    filename: 'bundle.js'
+  },
+  plugin: [
+    // Eliminate duplicate packages when generating bundle
+    new webpack.optimize.DedupePlugin(),
+    // Minify JS
+    new webpack.optimize.UglifyJsPlugin()
+  ],
+  module: {
+    loaders: [
+      {test: /\.js$/, exclude: /node_modules/, loaders: ['babel']},
+      {test: /\.css$/, loaders: ['style', 'css']}
+    ]
+  }
+}
+```
+Do the same with the srcServer and rename it to 'distServer.js' and fill with the following code;
+```
+import express from 'express';
+import path from 'path';
+import open from 'open';
+import compression from 'compression';
+
+/* eslint-disable no-console */
+
+const port = 3000;
+const app = express();
+
+app.use(compression()); // This is not for actual production, but is useful for hosting the minified production build locally for debugging
+app.use(express.statis('dist'));
+
+app.get('/', function (req, res){
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+app.get('/users', function(req, res) {
+  // Hard coding for simplicity. Pretend this hits a real/production database
+  res.json([
+    {"id": 1,"firstName":"Jay","lastName":"Evans","email":"jaymail@gmail.com"},
+    {"id": 2,"firstName":"Jade","lastName":"Evans","email":"jademail@gmail.com"},
+    {"id": 3,"firstName":"David","lastName":"Evans","email":"davidmail@gmail.com"}
+  ]);
+});
+
+app.listen(port, function(err) {
+  if (err) {
+    console.log(err);
+  } else {
+    open('http://localhost:' + port);
+  }
+});
+```
+Next change the content of our 'baseUrl.js' in src/api to the following;
+```
+export default function getBaseUrl() {
+  return getQueryStringParameterByName('useMockApi') ? 'http://localhost:3001/' : '/';
+}
+
+/* This function should make it easier for us to switch between
+   real and mockapi during development by just adding
+   '/?useMockApi=true' to the query string.
+*/
+function getQueryStringParameterByName(name, url) {
+  if (!url) url = window.location.href;
+  name = name.replace(/[\[\]]/g, "\\$&");
+  var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+      results = regex.exec(url);
+  if (!results) return null;
+  if (!results[2]) return;
+  return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+```
+Finally we need to update the package.json scripts to look as follows;
+```
+  "scripts": {
+    "prestart": "babel-node buildScripts/startMessage.js",
+    "start": "npm-run-all --parallel security-check open:src lint:watch test:watch start-mockapi",
+    "open:src": "babel-node buildScripts/srcServer.js",
+    "lint": "esw webpack.config.* src buildScripts --color",
+    "lint:watch": "npm run lint -- --watch",
+    "security-check": "nsp check",
+    "localtunnel": "lt --port 3000",
+    "share": "npm-run-all --parallel open:src localtunnel",
+    "test": "mocha --reporter progress buildScripts/testSetup.js \"src/**/*.test.js\"",
+    "test:watch": "npm run test -- --watch",
+    "generate-mock-data": "babel-node buildScripts/generateMockData",
+    "prestart-mockapi": "npm run generate-mock-data",
+    "start-mockapi": "json-server --watch src/api/db.json --port 3001",
+    "clean-dist": "rimraf ./dist && mkdir dist",
+    "prebuild": "npm-run-all clean-dist test lint",
+    "build": "babel-node buildScripts/build.js",
+    "postbuild": "babel-node buildScripts/distServer.js"
+  },
+``` 
