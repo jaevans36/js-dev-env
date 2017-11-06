@@ -9,7 +9,7 @@ const port = 3000;
 const app = express();
 
 app.use(compression()); // This is not for actual production, but is useful for hosting the minified production build locally for debugging
-app.use(express.statis('dist'));
+app.use(express.static('dist'));
 
 app.get('/', function (req, res){
   res.sendFile(path.join(__dirname, '../dist/index.html'));

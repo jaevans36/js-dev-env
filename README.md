@@ -691,7 +691,7 @@ const port = 3000;
 const app = express();
 
 app.use(compression()); // This is not for actual production, but is useful for hosting the minified production build locally for debugging
-app.use(express.statis('dist'));
+app.use(express.static('dist'));
 
 app.get('/', function (req, res){
   res.sendFile(path.join(__dirname, '../dist/index.html'));
@@ -755,4 +755,9 @@ Finally we need to update the package.json scripts to look as follows;
     "build": "babel-node buildScripts/build.js",
     "postbuild": "babel-node buildScripts/distServer.js"
   },
-``` 
+```
+The command we use to run the build is;
+```
+npm run build -s
+```
+Which will also run the prebuild and postbuild scripts as described, and clean-dist will clear any existing code from the folder before building our production app.
